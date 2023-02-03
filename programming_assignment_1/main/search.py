@@ -1,3 +1,5 @@
+import queue
+
 # search.py
 # ---------
 # Licensing Information:  You are free to use or extend these projects for
@@ -37,11 +39,6 @@ def depth_first_search(problem):
     "*** YOUR CODE HERE ***"
     util.raise_not_defined()
 
-
-def breadth_first_search(problem):
-    """Search the shallowest nodes in the search tree first."""
-    "*** YOUR CODE HERE ***"
-    util.raise_not_defined()
 
 
 def uniform_cost_search(problem, heuristic=None):
@@ -88,9 +85,109 @@ def heuristic1(state, problem=None):
         optimisitic_number_of_steps_to_goal = 0
         return optimisitic_number_of_steps_to_goal
 
-def a_star_search(problem, heuristic=heuristic1):
-    """Search the node that has the lowest combined cost and heuristic first."""
-    "*** YOUR CODE HERE ***"
+#TRI
+# can initialize with just a state, or with transition/parent pair
+# transition slots: state, action, cost
+
+class Node:
+  def __init__(self,state=None,transition=None,parent=None): 
+    self.state = state
+    self.transition = transition
+    self.parent = parent
+    self.action = None
+
+    if transition!=None:
+      self.state = transition.state
+      self.action = transition.action
+
+    self.depth = 0 if parent==None else parent.depth+1
+
+  def is_goal(self):
+    # count food pellets
+    position, food_grid = self.state
+    pacman_x, pacman_y = self.position
+
+
+#def breadth_first_search(problem):
+#    util.raise_not_defined()
+
+######################################
+#TRI
+
+# can initialize with just a state, or with transition/parent pair
+# transition slots: state, action, cost
+
+class Node:
+  def __init__(self,state=None,action=None,parent=None): 
+    self.state = state
+    self.parent = parent
+    self.action = action
+
+    self.depth = 0 if parent==None else parent.depth+1
+    position, food = self.state
+    self.loc = position
+    self.nfood = sum([1 if food[x][y] else 0 for x in range(food.width) for y in range(food.height)])
+
+  def is_goal(self):
+    # count food pellets
+    return self.nfood==0
+
+  def get_path(self):
+    if self.parent==None: return []
+    return self.parent.get_path()+[self.action]
+
+  # key includes coords of pacman, plus list of food locations
+
+  def get_key(self):
+    return "x=%s,y=%s,f=%s" % (self.loc[0],self.loc[1],str(self.get_food_list()))
+
+  def get_food_list(self):
+    position,food = self.state
+    food_positions = []
+    for x in range(food.width):
+      for y in range(food.height):
+        if food[x][y]: food_positions.append((x,y))
+    return food_positions
+
+def breadth_first_search(problem):
+
+  start_state = problem.get_start_state()
+  pos,food = start_state
+  nfood = sum([1 if food[x][y] else 0 for x in range(food.width) for y in range(food.height)])
+  print("initial food pellets: %s" % nfood)
+
+  visited = {}
+  frontier = queue.Queue()
+  frontier.put(Node(state=start_state))
+
+  while not frontier.empty():
+    node = frontier.get()
+    print("d=%s,%s" % (node.depth,node.get_key()))
+    if node.is_goal(): path = node.get_path(); print("solution: %s" % (str(path))); return path
+    transitions = problem.get_successors(node.state) # transition objects have .state and .action
+    children = [Node(state=x.state,action=x.action,parent=node) for x in transitions]
+    for child in children: 
+      key = child.get_key()
+      if key not in visited:
+        visited[key] = 1
+        frontier.put(child)
+
+  print("no solution found :-(")
+  return []
+
+  #example_path = [  transitions[0].action  ]
+  #path_cost = problem.get_cost_of_actions(example_path)
+  #return example_path
+
+def a_star_search(problem,heuristic=heuristic1):
+  return breadth_first_search(problem)
+
+
+######################################
+
+    #def a_star_search(problem, heuristic=heuristic1):
+    #"""Search the node that has the lowest combined cost and heuristic first."""
+    #"*** YOUR CODE HERE ***"
     
     # What does this function need to return?
     #     list of actions that reaches the goal
@@ -119,8 +216,7 @@ def a_star_search(problem, heuristic=heuristic1):
     #     path_cost = problem.get_cost_of_actions(example_path)
     #     return example_path
     
-    util.raise_not_defined()
-
+    #util.raise_not_defined()
 
 # (you can ignore this, although it might be helpful to know about)
 # This is effectively an abstract class

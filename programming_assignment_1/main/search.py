@@ -68,6 +68,170 @@ def euclidean_heuristic(position, problem, info={}):
     xy2 = problem.goal
     return ((xy1[0] - xy2[0]) ** 2 + (xy1[1] - xy2[1]) ** 2) ** 0.5
 
+def remaining_food(state, problem=None):
+    from search_agents import FoodSearchProblem
+    if not isinstance(problem, FoodSearchProblem):
+        return 0
+        
+    if isinstance(problem, FoodSearchProblem):
+        flatten = lambda *m: (i for n in m for i in (flatten(*n) if isinstance(n, (tuple, list)) else (n,)))
+        
+        position, food_grid = state
+        pacman_x, pacman_y = position
+        
+        # 
+        # remaining food heur
+        # 
+        return sum(flatten(food_grid))
+        
+def manhattans_all_food(state, problem=None):
+    from search_agents import FoodSearchProblem
+    if not isinstance(problem, FoodSearchProblem):
+        return 0
+        
+    if isinstance(problem, FoodSearchProblem):
+        flatten = lambda *m: (i for n in m for i in (flatten(*n) if isinstance(n, (tuple, list)) else (n,)))
+        
+        position, food_grid = state
+        pacman_x, pacman_y = position
+        
+        
+        food_positions = []
+        for column_index, each_column in enumerate(food_grid):
+            for row_index, each_cell in enumerate(each_column):
+                if each_cell:
+                    food_positions.append((column_index, row_index))
+        
+        distances = [ abs(pacman_x - food_x) + abs(pacman_y - food_y) for food_x,food_y in food_positions ] + [ 0 ]
+        # 
+        # manhattan_distance to all food heur
+        # 
+        return sum(distances) # very very very not-admissible, but solves the problem
+        
+def manhattans_closest_food(state, problem=None):
+    from search_agents import FoodSearchProblem
+    if not isinstance(problem, FoodSearchProblem):
+        return 0
+        
+    if isinstance(problem, FoodSearchProblem):
+        flatten = lambda *m: (i for n in m for i in (flatten(*n) if isinstance(n, (tuple, list)) else (n,)))
+        
+        position, food_grid = state
+        pacman_x, pacman_y = position
+        
+        
+        food_positions = []
+        for column_index, each_column in enumerate(food_grid):
+            for row_index, each_cell in enumerate(each_column):
+                if each_cell:
+                    food_positions.append((column_index, row_index))
+        
+        distances = [ abs(pacman_x - food_x) + abs(pacman_y - food_y) for food_x,food_y in food_positions ] + [ 0 ]
+        
+        # 
+        # nearest point
+        # 
+        return min(distances) +  sum(flatten(food_grid)) # does worse than manhattans_all_food
+        
+        # 
+        # nearest chain (greedy)
+        # 
+        # remaining_nodes = list(food_positions)
+        # distances = [ abs(pacman_x - food_x) + abs(pacman_y - food_y) for food_x,food_y in remaining_nodes ]
+        # cost = 0
+        # while len(remaining_nodes):
+        #     index_of_closest = bb.max_index([ -each for each in distances])
+        #     remaining_nodes.pop(index_of_closest)
+        #     cost += distances.pop(index_of_closest)
+        #     distances = [ abs(pacman_x - food_x) + abs(pacman_y - food_y) for food_x,food_y in remaining_nodes ]
+        # return cost
+        
+        zipped = [ dict(position=a, distance=b) for a,b in zip(food_positions, distances)]
+        zipped.sort(reverse=False, key=lambda each: each["distance"])
+        sorted_food_positions = [ each["position"] for each in zipped ]
+        
+        # 
+        # graviation to clusters
+        # 
+        def cost_of_nearest(x,y):
+            return min([ abs(x - food_x) + abs(y - food_y) for food_x,food_y in sorted_food_positions ] + [ 0 ])
+        
+        return sum(cost_of_nearest(x,y)*(1/(index+1)) for index, (x,y) in enumerate([position]+sorted_food_positions))
+
+def greedy_chain(state, problem=None):
+    from search_agents import FoodSearchProblem
+    if not isinstance(problem, FoodSearchProblem):
+        return 0
+        
+    if isinstance(problem, FoodSearchProblem):
+        flatten = lambda *m: (i for n in m for i in (flatten(*n) if isinstance(n, (tuple, list)) else (n,)))
+        
+        position, food_grid = state
+        pacman_x, pacman_y = position
+        
+        
+        food_positions = []
+        for column_index, each_column in enumerate(food_grid):
+            for row_index, each_cell in enumerate(each_column):
+                if each_cell:
+                    food_positions.append((column_index, row_index))
+        
+        distances = [ abs(pacman_x - food_x) + abs(pacman_y - food_y) for food_x,food_y in food_positions ] + [ 0 ]
+        
+        # 
+        # nearest chain (greedy)
+        # 
+        remaining_nodes = list(food_positions)
+        distances = [ abs(pacman_x - food_x) + abs(pacman_y - food_y) for food_x,food_y in remaining_nodes ]
+        cost = 0
+        def max_index(iterable):
+            iterable = tuple(iterable)
+            if len(iterable) == 0:
+                return None
+            max_value = max(iterable)
+            from random import sample
+            options = tuple( each_index for each_index, each in enumerate(iterable) if each == max_value )
+            return sample(options, 1)[0]
+        
+        while len(remaining_nodes):
+            index_of_closest = max_index([ -each for each in distances])
+            remaining_nodes.pop(index_of_closest)
+            cost += distances.pop(index_of_closest)
+            distances = [ abs(pacman_x - food_x) + abs(pacman_y - food_y) for food_x,food_y in remaining_nodes ]
+        return cost
+
+def discounted_cluster_gravity(state, problem=None):
+    from search_agents import FoodSearchProblem
+    if not isinstance(problem, FoodSearchProblem):
+        return 0
+        
+    if isinstance(problem, FoodSearchProblem):
+        flatten = lambda *m: (i for n in m for i in (flatten(*n) if isinstance(n, (tuple, list)) else (n,)))
+        
+        position, food_grid = state
+        pacman_x, pacman_y = position
+        
+        
+        food_positions = []
+        for column_index, each_column in enumerate(food_grid):
+            for row_index, each_cell in enumerate(each_column):
+                if each_cell:
+                    food_positions.append((column_index, row_index))
+        
+        distances = [ abs(pacman_x - food_x) + abs(pacman_y - food_y) for food_x,food_y in food_positions ] + [ 0 ]
+        
+        zipped = [ dict(position=a, distance=b) for a,b in zip(food_positions, distances)]
+        zipped.sort(reverse=False, key=lambda each: each["distance"])
+        sorted_food_positions = [ each["position"] for each in zipped ]
+        
+        # 
+        # graviation to clusters
+        # 
+        def cost_of_nearest(x,y):
+            return min([ abs(x - food_x) + abs(y - food_y) for food_x,food_y in sorted_food_positions ] + [ 0 ])
+        
+        return sum(cost_of_nearest(x,y)*(1/(index+1)) for index, (x,y) in enumerate([position]+sorted_food_positions))
+
 def heuristic1(state, problem=None):
     from search_agents import FoodSearchProblem
     

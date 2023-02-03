@@ -57,6 +57,17 @@ def a_really_really_bad_heuristic(position, problem):
 def null_heuristic(state, problem=None):
     return 0
 
+def manhattan_distance(state, problem=None):
+    current_x, current_y = state
+    goal_x, goal_y = problem.goal
+    return abs(current_x - goal_x) + abs(current_y - goal_y)
+
+def euclidean_heuristic(position, problem, info={}):
+    "The Euclidean distance heuristic for a PositionSearchProblem"
+    xy1 = position
+    xy2 = problem.goal
+    return ((xy1[0] - xy2[0]) ** 2 + (xy1[1] - xy2[1]) ** 2) ** 0.5
+
 def heuristic1(state, problem=None):
     from search_agents import FoodSearchProblem
     
@@ -91,70 +102,85 @@ def heuristic1(state, problem=None):
 # can initialize with just a state alone, or with state+action+parent
 
 class Node:
-  def __init__(self,state=None,action=None,parent=None): 
-    self.state = state
-    self.parent = parent
-    self.action = action
+    def __init__(self,state=None,action=None,parent=None): 
+        self.state = state
+        self.parent = parent
+        self.action = action
 
-    self.depth = 0 if parent==None else parent.depth+1
-    position, food = self.state
-    self.loc = position
-    self.nfood = sum([1 if food[x][y] else 0 for x in range(food.width) for y in range(food.height)])
+        self.depth = 0 if parent==None else parent.depth+1
+        position, food = self.state
+        self.loc = position
+        self.nfood = sum([1 if food[x][y] else 0 for x in range(food.width) for y in range(food.height)])
 
-  def is_goal(self):
-    # count food pellets
-    return self.nfood==0
+    def is_goal(self):
+        # count food pellets
+        return self.nfood==0
 
-  def get_path(self):
-    if self.parent==None: return []
-    return self.parent.get_path()+[self.action]
+    def get_path(self):
+        if self.parent==None: return []
+        return self.parent.get_path()+[self.action]
 
-  # key includes coords of pacman, plus list of food locations
+    # key includes coords of pacman, plus list of food locations
 
-  def get_key(self):
-    return "x=%s,y=%s,f=%s" % (self.loc[0],self.loc[1],str(self.get_food_list()))
+    def get_key(self):
+        return "x=%s,y=%s,f=%s" % (self.loc[0],self.loc[1],str(self.get_food_list()))
 
-  def get_food_list(self):
-    position,food = self.state
-    food_positions = []
-    for x in range(food.width):
-      for y in range(food.height):
-        if food[x][y]: food_positions.append((x,y))
-    return food_positions
+    def get_food_list(self):
+        position,food = self.state
+        food_positions = []
+        for x in range(food.width):
+            for y in range(food.height):
+                if food[x][y]: food_positions.append((x,y))
+        return food_positions
 
 def breadth_first_search(problem):
+    start_state = problem.get_start_state()
+    pos,food = start_state
+    nfood = sum([1 if food[x][y] else 0 for x in range(food.width) for y in range(food.height)])
+    print("initial food pellets: %s" % nfood)
 
-  start_state = problem.get_start_state()
-  pos,food = start_state
-  nfood = sum([1 if food[x][y] else 0 for x in range(food.width) for y in range(food.height)])
-  print("initial food pellets: %s" % nfood)
+    visited = {}
+    frontier = queue.Queue()
+    frontier.put(Node(state=start_state))
 
-  visited = {}
-  frontier = queue.Queue()
-  frontier.put(Node(state=start_state))
+    while not frontier.empty():
+        node = frontier.get()
+        print("d=%s,%s" % (node.depth,node.get_key()))
+        if node.is_goal(): path = node.get_path(); print("solution: %s" % (str(path))); return path
+        transitions = problem.get_successors(node.state) # transition objects have .state and .action
+        children = [Node(state=x.state,action=x.action,parent=node) for x in transitions]
+        for child in children: 
+            key = child.get_key()
+            if key not in visited:
+                visited[key] = 1
+                frontier.put(child)
 
-  while not frontier.empty():
-    node = frontier.get()
-    print("d=%s,%s" % (node.depth,node.get_key()))
-    if node.is_goal(): path = node.get_path(); print("solution: %s" % (str(path))); return path
-    transitions = problem.get_successors(node.state) # transition objects have .state and .action
-    children = [Node(state=x.state,action=x.action,parent=node) for x in transitions]
-    for child in children: 
-      key = child.get_key()
-      if key not in visited:
-        visited[key] = 1
-        frontier.put(child)
+    print("no solution found :-(")
+    return []
 
-  print("no solution found :-(")
-  return []
+def a_star_search(problem, heuristic=heuristic1):
+    opened_states = util.PriorityQueue()  # Stores states that need to be expanded for Uniform Cost Search.
+    current_path = util.PriorityQueue()  # Stores path of expanded states.
+    closed_states = []  # Stores states that have been expanded.
+    final_path = []  # Store final path of states.
 
-  #example_path = [  transitions[0].action  ]
-  #path_cost = problem.get_cost_of_actions(example_path)
-  #return example_path
+    opened_states.push(problem.get_start_state(), 0)
+    current_state = opened_states.pop()  # Current State.
+    while not problem.is_goal_state(current_state):  # Search until goal state.
+        if current_state not in closed_states:  # New state found.
+            closed_states.append(current_state)  # Add state to closed_states.
 
-def a_star_search(problem,heuristic=heuristic1):
-  return breadth_first_search(problem)
+            for successor in problem.get_successors(current_state):  # To calculate costs of successors of current state.
+                path_cost = problem.get_cost_of_actions(final_path + [successor[1]])  # Cost of selecting successor.
+                path_cost += heuristic(successor[0], problem)
+                if successor[0] not in closed_states:  # If successor is a new state add to opened_states queue and store path.
+                    opened_states.push(successor[0], path_cost)
+                    current_path.push(final_path + [successor[1]], path_cost)
 
+        current_state = opened_states.pop()  # Update current state.
+        final_path = current_path.pop()  # Add to final path.
+
+    return final_path
 
 ######################################
 

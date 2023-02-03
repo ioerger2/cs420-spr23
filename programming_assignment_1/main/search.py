@@ -85,37 +85,10 @@ def heuristic1(state, problem=None):
         optimisitic_number_of_steps_to_goal = 0
         return optimisitic_number_of_steps_to_goal
 
-#TRI
-# can initialize with just a state, or with transition/parent pair
-# transition slots: state, action, cost
-
-class Node:
-  def __init__(self,state=None,transition=None,parent=None): 
-    self.state = state
-    self.transition = transition
-    self.parent = parent
-    self.action = None
-
-    if transition!=None:
-      self.state = transition.state
-      self.action = transition.action
-
-    self.depth = 0 if parent==None else parent.depth+1
-
-  def is_goal(self):
-    # count food pellets
-    position, food_grid = self.state
-    pacman_x, pacman_y = self.position
-
-
-#def breadth_first_search(problem):
-#    util.raise_not_defined()
-
 ######################################
 #TRI
 
-# can initialize with just a state, or with transition/parent pair
-# transition slots: state, action, cost
+# can initialize with just a state alone, or with state+action+parent
 
 class Node:
   def __init__(self,state=None,action=None,parent=None): 

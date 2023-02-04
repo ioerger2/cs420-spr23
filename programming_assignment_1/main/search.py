@@ -104,6 +104,8 @@ class Node:
     self.loc = position
     self.nfood = sum([1 if food[x][y] else 0 for x in range(food.width) for y in range(food.height)])
 
+    self.priority = (self.nfood,next(unique)) # unique is a counter for breaking ties in PriorityQueue
+
   def is_goal(self):
     # count food pellets
     return self.nfood==0
@@ -124,6 +126,8 @@ class Node:
       for y in range(food.height):
         if food[x][y]: food_positions.append((x,y))
     return food_positions
+
+  def __lt__(self,other): return self.priority < other.priority
 
 def breadth_first_search(problem):
 
@@ -165,10 +169,10 @@ def a_star_search(problem,heuristic=heuristic1):
 
   visited = {}
   frontier = queue.PriorityQueue()
-  frontier.put((nfood,next(unique),Node(state=start_state))) # unique is a counter for breaking ties
+  frontier.put(Node(state=start_state))
 
   while not frontier.empty():
-    (nfood,uniq,node) = frontier.get()
+    node = frontier.get()
     print("d=%s,%s" % (node.depth,node.get_key()))
     if node.is_goal(): path = node.get_path(); print("solution: %s" % (str(path))); return path
     transitions = problem.get_successors(node.state) # transition objects have .state and .action
@@ -177,7 +181,7 @@ def a_star_search(problem,heuristic=heuristic1):
       key = child.get_key()
       if key not in visited:
         visited[key] = 1
-        frontier.put((child.nfood,next(unique),child))
+        frontier.put(child)
 
   print("no solution found :-(")
   return []

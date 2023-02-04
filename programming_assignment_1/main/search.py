@@ -88,6 +88,9 @@ def heuristic1(state, problem=None):
 ######################################
 #TRI
 
+import itertools
+unique = itertools.count()
+
 # can initialize with just a state alone, or with state+action+parent
 
 class Node:
@@ -153,7 +156,33 @@ def breadth_first_search(problem):
   #return example_path
 
 def a_star_search(problem,heuristic=heuristic1):
-  return breadth_first_search(problem)
+  #return breadth_first_search(problem)
+
+  start_state = problem.get_start_state()
+  pos,food = start_state
+  nfood = sum([1 if food[x][y] else 0 for x in range(food.width) for y in range(food.height)])
+  print("initial food pellets: %s" % nfood)
+
+  visited = {}
+  frontier = queue.PriorityQueue()
+  frontier.put((nfood,next(unique),Node(state=start_state))) # unique is a counter for breaking ties
+
+  while not frontier.empty():
+    (nfood,uniq,node) = frontier.get()
+    print("d=%s,%s" % (node.depth,node.get_key()))
+    if node.is_goal(): path = node.get_path(); print("solution: %s" % (str(path))); return path
+    transitions = problem.get_successors(node.state) # transition objects have .state and .action
+    children = [Node(state=x.state,action=x.action,parent=node) for x in transitions]
+    for child in children: 
+      key = child.get_key()
+      if key not in visited:
+        visited[key] = 1
+        frontier.put((child.nfood,next(unique),child))
+
+  print("no solution found :-(")
+  return []
+
+
 
 
 ######################################

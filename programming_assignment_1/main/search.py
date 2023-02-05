@@ -80,7 +80,7 @@ def heuristic1(state, problem=None):
         position, food_grid = state
         pacman_x, pacman_y = position
         
-        # YOUR CODE HERE (set value of optimisitic_number_of_steps_to_goal)
+        return sum([1 if food_grid[x][y] else 0 for x in range(food_grid.width) for y in range(food_grid.height)])
         
         optimisitic_number_of_steps_to_goal = 0
         return optimisitic_number_of_steps_to_goal
@@ -94,40 +94,43 @@ unique = itertools.count()
 # can initialize with just a state alone, or with state+action+parent
 
 class Node:
-  def __init__(self,state=None,action=None,parent=None): 
-    self.state = state
-    self.parent = parent
-    self.action = action
+    def __init__(self, state=None, action=None, parent=None, problem=None, heuristic=None): 
+        self.state = state
+        self.parent = parent
+        self.action = action
 
-    self.depth = 0 if parent==None else parent.depth+1
-    position, food = self.state
-    self.loc = position
-    self.nfood = sum([1 if food[x][y] else 0 for x in range(food.width) for y in range(food.height)])
+        self.depth = 0 if parent==None else parent.depth+1
+        position, food = self.state
+        self.loc = position
+        self.nfood = sum([1 if food[x][y] else 0 for x in range(food.width) for y in range(food.height)])
+        
+        heuristic = heuristic or (lambda *args: 0)
+        
+        self.priority = (self.depth + heuristic(state, problem), next(unique)) # unique is a counter for breaking ties in PriorityQueue
 
-    self.priority = (self.nfood,next(unique)) # unique is a counter for breaking ties in PriorityQueue
+    def is_goal(self):
+        # count food pellets
+        return self.nfood==0
 
-  def is_goal(self):
-    # count food pellets
-    return self.nfood==0
+    def get_path(self):
+        if self.parent==None: return []
+        return self.parent.get_path()+[self.action]
 
-  def get_path(self):
-    if self.parent==None: return []
-    return self.parent.get_path()+[self.action]
+    # key includes coords of pacman, plus list of food locations
 
-  # key includes coords of pacman, plus list of food locations
+    def get_key(self):
+        return "x=%s,y=%s,f=%s" % (self.loc[0], self.loc[1], str(self.get_food_list()))
 
-  def get_key(self):
-    return "x=%s,y=%s,f=%s" % (self.loc[0],self.loc[1],str(self.get_food_list()))
+    def get_food_list(self):
+        position, food = self.state
+        food_positions = []
+        for x in range(food.width):
+            for y in range(food.height):
+                if food[x][y]: food_positions.append((x,y))
+        return food_positions
 
-  def get_food_list(self):
-    position,food = self.state
-    food_positions = []
-    for x in range(food.width):
-      for y in range(food.height):
-        if food[x][y]: food_positions.append((x,y))
-    return food_positions
-
-  def __lt__(self,other): return self.priority < other.priority
+    def __lt__(self,other):
+        return self.priority < other.priority
 
 def breadth_first_search(problem):
 
@@ -159,32 +162,32 @@ def breadth_first_search(problem):
   #path_cost = problem.get_cost_of_actions(example_path)
   #return example_path
 
-def a_star_search(problem,heuristic=heuristic1):
-  #return breadth_first_search(problem)
+def a_star_search(problem, heuristic=heuristic1):
+    #return breadth_first_search(problem)
 
-  start_state = problem.get_start_state()
-  pos,food = start_state
-  nfood = sum([1 if food[x][y] else 0 for x in range(food.width) for y in range(food.height)])
-  print("initial food pellets: %s" % nfood)
+    start_state = problem.get_start_state()
+    pos, food = start_state
 
-  visited = {}
-  frontier = queue.PriorityQueue()
-  frontier.put(Node(state=start_state))
+    visited = {}
+    frontier = queue.PriorityQueue()
+    frontier.put(Node(state=start_state))
 
-  while not frontier.empty():
-    node = frontier.get()
-    print("d=%s,%s" % (node.depth,node.get_key()))
-    if node.is_goal(): path = node.get_path(); print("solution: %s" % (str(path))); return path
-    transitions = problem.get_successors(node.state) # transition objects have .state and .action
-    children = [Node(state=x.state,action=x.action,parent=node) for x in transitions]
-    for child in children: 
-      key = child.get_key()
-      if key not in visited:
-        visited[key] = 1
-        frontier.put(child)
+    while not frontier.empty():
+        node = frontier.get()
+        if node.is_goal():
+            path = node.get_path()
+            return path
+        
+        transitions = problem.get_successors(node.state) # transition objects have .state and .action
+        children = [ Node(state=x.state, action=x.action, parent=node, problem=problem, heuristic=heuristic) for x in transitions ]
+        for child in children: 
+            key = child.get_key()
+            if key not in visited:
+                visited[key] = 1
+                frontier.put(child)
 
-  print("no solution found :-(")
-  return []
+    print("no solution found :-(")
+    return []
 
 
 

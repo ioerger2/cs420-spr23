@@ -34,10 +34,10 @@ if len(heuristics_to_test) == 0:
     print("please list the names of your heuristics as arguments")
 
 base_tests = [
-    [ "PositionSearchProblem", "tiny_maze"         , ],
-    [ "PositionSearchProblem", "medium_maze"       , ],
-    [ "PositionSearchProblem", "big_maze"          , ],
-    [ "PositionSearchProblem", "huge_maze"         , ],
+    # [ "PositionSearchProblem", "tiny_maze"         , ],
+    # [ "PositionSearchProblem", "medium_maze"       , ],
+    # [ "PositionSearchProblem", "big_maze"          , ],
+    # [ "PositionSearchProblem", "huge_maze"         , ],
     [ "FoodSearchProblem"    , "food_search_1"     , ],
     [ "FoodSearchProblem"    , "box_search"        , ],
     [ "FoodSearchProblem"    , "food_search_2"     , ],
@@ -69,9 +69,8 @@ def run_and_extract_data(heuristic, problem, layout):
     solution_length = None
     seconds = None
     try:
-        lines = output.split("\n")
-        lines = [ line for line in lines if not line.startswith("[SearchAgent]") ]
-        output = "\n".join(lines)
+        relevent_lines = output.split("\n")[-7:]
+        output = "\n".join(relevent_lines)
         output = output.replace(f"Path found with total cost of","Path found with total cost of:")
         output = output.replace(f"Warning: this does not look like a regular search maze\n","")
         data  = ez_yaml.to_object(
@@ -89,7 +88,7 @@ def run_and_extract_data(heuristic, problem, layout):
         print(f'''nodes_expanded = {nodes_expanded}''')
         print(f'''solution_length = {solution_length}''')
         print(f'''seconds = {seconds}''')
-        print(f'''data = {dict(data)}''')
+        print(f'''data = {data}''')
         print("")
         print(f'''output = {json.dumps(output)}''')
         return [ None, None, None , None ]

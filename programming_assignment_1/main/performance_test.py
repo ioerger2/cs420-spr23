@@ -89,7 +89,7 @@ def run_and_extract_data(heuristic, problem, layout):
         print(f'''nodes_expanded = {nodes_expanded}''')
         print(f'''solution_length = {solution_length}''')
         print(f'''seconds = {seconds}''')
-        print(f'''data = {dict(data)}''')
+        print(f'''data = {data}''')
         print("")
         print(f'''output = {json.dumps(output)}''')
         return [ None, None, None , None ]

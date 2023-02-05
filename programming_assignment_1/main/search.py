@@ -82,7 +82,7 @@ def remaining_food(state, problem=None):
         # 
         # remaining food heur
         # 
-        return sum(flatten(food_grid))
+        return sum(flatten(list(food_grid)))
         
 def manhattans_all_food(state, problem=None):
     from search_agents import FoodSearchProblem
@@ -118,7 +118,7 @@ def manhattans_closest_food(state, problem=None):
         
         position, food_grid = state
         pacman_x, pacman_y = position
-        
+        food_grid = list(food_grid)
         
         food_positions = []
         for column_index, each_column in enumerate(food_grid):
@@ -132,31 +132,6 @@ def manhattans_closest_food(state, problem=None):
         # nearest point
         # 
         return min(distances) +  sum(flatten(food_grid)) # does worse than manhattans_all_food
-        
-        # 
-        # nearest chain (greedy)
-        # 
-        # remaining_nodes = list(food_positions)
-        # distances = [ abs(pacman_x - food_x) + abs(pacman_y - food_y) for food_x,food_y in remaining_nodes ]
-        # cost = 0
-        # while len(remaining_nodes):
-        #     index_of_closest = bb.max_index([ -each for each in distances])
-        #     remaining_nodes.pop(index_of_closest)
-        #     cost += distances.pop(index_of_closest)
-        #     distances = [ abs(pacman_x - food_x) + abs(pacman_y - food_y) for food_x,food_y in remaining_nodes ]
-        # return cost
-        
-        zipped = [ dict(position=a, distance=b) for a,b in zip(food_positions, distances)]
-        zipped.sort(reverse=False, key=lambda each: each["distance"])
-        sorted_food_positions = [ each["position"] for each in zipped ]
-        
-        # 
-        # graviation to clusters
-        # 
-        def cost_of_nearest(x,y):
-            return min([ abs(x - food_x) + abs(y - food_y) for food_x,food_y in sorted_food_positions ] + [ 0 ])
-        
-        return sum(cost_of_nearest(x,y)*(1/(index+1)) for index, (x,y) in enumerate([position]+sorted_food_positions))
 
 def greedy_chain(state, problem=None):
     from search_agents import FoodSearchProblem
@@ -168,6 +143,7 @@ def greedy_chain(state, problem=None):
         
         position, food_grid = state
         pacman_x, pacman_y = position
+        food_grid = list(food_grid)
         
         
         food_positions = []
@@ -210,6 +186,7 @@ def discounted_cluster_gravity(state, problem=None):
         
         position, food_grid = state
         pacman_x, pacman_y = position
+        food_grid = list(food_grid)
         
         
         food_positions = []
@@ -254,6 +231,7 @@ def heuristic1(state, problem=None):
         # the state includes a grid of where the food is (problem isn't ter)
         position, food_grid = state
         pacman_x, pacman_y = position
+        food_grid = list(food_grid)
         
         # YOUR CODE HERE (set value of optimisitic_number_of_steps_to_goal)
         

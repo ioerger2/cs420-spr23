@@ -312,12 +312,11 @@ def a_star_search(problem, heuristic=heuristic1):
         if current_state not in closed_states:  # New state found.
             closed_states.append(current_state)  # Add state to closed_states.
 
-            for successor in problem.get_successors(current_state):  # To calculate costs of successors of current state.
-                path_cost = problem.get_cost_of_actions(final_path + [successor[1]])  # Cost of selecting successor.
-                path_cost += heuristic(successor[0], problem)
-                if successor[0] not in closed_states:  # If successor is a new state add to opened_states queue and store path.
-                    opened_states.push(successor[0], path_cost)
-                    current_path.push(final_path + [successor[1]], path_cost)
+            for state, action, cost in problem.get_successors(current_state):  # To calculate costs of successors of current state.
+                path_cost = cost + heuristic(state, problem)
+                if state not in closed_states:  # If successor is a new state add to opened_states queue and store path.
+                    opened_states.push(state, path_cost)
+                    current_path.push(final_path + [action], path_cost)
 
         current_state = opened_states.pop()  # Update current state.
         final_path = current_path.pop()  # Add to final path.

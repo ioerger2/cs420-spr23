@@ -87,6 +87,7 @@ def heuristic1(state, problem=None):
 
 ######################################
 #TRI
+# > python3 pacman.py -l food_search_1 -p SearchAgent -a prob=FoodSearchProblem 
 
 import itertools
 unique = itertools.count()
@@ -104,7 +105,34 @@ class Node:
     self.loc = position
     self.nfood = sum([1 if food[x][y] else 0 for x in range(food.width) for y in range(food.height)])
 
-    self.priority = (self.nfood,next(unique)) # unique is a counter for breaking ties in PriorityQueue
+    #self.priority = (self.nfood,next(unique)) # unique is a counter for breaking ties in PriorityQueue; this is just h(n)
+    #self.priority = (self.depth+self.sum_food_dists(),next(unique)) # add dists from pacman to each food pellet (doesn't work well for fs2 and fs3, which are sparse)
+    #self.priority = (self.depth+self.nfood+self.closest_food(),next(unique)) # add dists from pacman to each food pellet (doesn't work well for fs2 and fs3, which are sparse)
+
+    self.priority = (self.depth+5*self.nfood,next(unique)) # f(n)=g(n)+h(n); this works well!
+
+    #size=food.width*food.height
+    #frac = self.nfood/float(size)
+    #self.priority = (frac*self.nfood+(1-frac)*self.sum_food_dists(),next(unique)) # mixture
+
+  def closest_food(self):
+    coords,food = self.state
+    x,y = coords
+    food_list = self.get_food_list()
+    dist = 99999
+    for (i,j) in food_list:
+      d = abs(x-i)+abs(y-j)
+      if d<dist: dist = d
+    return dist
+
+  def sum_food_dists(self):
+    coords,food = self.state
+    x,y = coords
+    food_list = self.get_food_list()
+    dist = 0
+    for (i,j) in food_list:
+      dist += abs(x-i)+abs(y-j)
+    return dist
 
   def is_goal(self):
     # count food pellets
@@ -118,6 +146,10 @@ class Node:
 
   def get_key(self):
     return "x=%s,y=%s,f=%s" % (self.loc[0],self.loc[1],str(self.get_food_list()))
+    # could also do it this way, since food has Grid.__hash__()
+    #key = "x=%s,y=%s,f=%s" % (self.loc[0],self.loc[1],str(self.get_food_list()))
+    #print("get_key(): %s | %s" % (self.state,key ))
+    #return self.state 
 
   def get_food_list(self):
     position,food = self.state
@@ -142,7 +174,7 @@ def breadth_first_search(problem):
 
   while not frontier.empty():
     node = frontier.get()
-    print("d=%s,%s" % (node.depth,node.get_key()))
+    print("depth=%s, key=%s" % (node.depth,node.get_key()))
     if node.is_goal(): path = node.get_path(); print("solution: %s" % (str(path))); return path
     transitions = problem.get_successors(node.state) # transition objects have .state and .action
     children = [Node(state=x.state,action=x.action,parent=node) for x in transitions]
@@ -173,7 +205,8 @@ def a_star_search(problem,heuristic=heuristic1):
 
   while not frontier.empty():
     node = frontier.get()
-    print("d=%s,%s" % (node.depth,node.get_key()))
+    print("priority=%s, depth=%s, pos=%s, nfood=%s" % (node.priority,node.depth,node.state[0],node.nfood))
+    #print("priority=%s, depth=%s, key=%s" % (node.priority,node.depth,node.get_key()))
     if node.is_goal(): path = node.get_path(); print("solution: %s" % (str(path))); return path
     transitions = problem.get_successors(node.state) # transition objects have .state and .action
     children = [Node(state=x.state,action=x.action,parent=node) for x in transitions]
